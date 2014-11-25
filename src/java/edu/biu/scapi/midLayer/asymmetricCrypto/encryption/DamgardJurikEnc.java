@@ -39,6 +39,8 @@ import edu.biu.scapi.midLayer.ciphertext.AsymmetricCiphertext;
  */
 public interface DamgardJurikEnc extends AsymAdditiveHomomorphicEnc {
 	
+	public void setLengthParameter(int s);
+	
 	/**
 	 * This function takes an encryption of some plaintext (let's call it originalPlaintext) and returns a cipher that "looks" different but
 	 * it is also an encryption of originalPlaintext.<p>
