@@ -45,7 +45,7 @@ ifeq ($(uname_S),Darwin)
 	LIBTOOL=glibtool
 	JNI_PATH=DYLD_LIBRARY_PATH
 	OSX_VERSION=$(shell sw_vers -productVersion)
-	ifneq (,$(findstring 10.9,$(OSX_VERSION)))
+	ifneq (,$(findstring $(OSX_VERSION),10.9 10.10))
 		CC=gcc-4.9
 		CXX=g++-4.9
 		AR=gcc-ar-4.9
@@ -67,16 +67,18 @@ export SHARED_LIB_EXT
 export JNI_LIB_EXT
 
 # target names
-CLEAN_TARGETS:=clean-cryptopp clean-miracl clean-miracl-cpp clean-otextension clean-ntl clean-openssl clean-bouncycastle
-CLEAN_JNI_TARGETS:=clean-jni-cryptopp clean-jni-miracl clean-jni-otextension clean-jni-ntl clean-jni-openssl clean-jni-assets
+CLEAN_TARGETS:=clean-cryptopp clean-miracl clean-miracl-cpp clean-otextension clean-malotext clean-ntl clean-openssl clean-opengarble clean-bouncycastle
+CLEAN_JNI_TARGETS:=clean-jni-cryptopp clean-jni-miracl clean-jni-otextension clean-jni-malotext clean-jni-ntl clean-jni-openssl clean-jni-opengarble clean-jni-assets
 
 # target names of jni shared libraries
 JNI_CRYPTOPP:=src/jni/CryptoPPJavaInterface/libCryptoPPJavaInterface$(JNI_LIB_EXT)
 JNI_MIRACL:=src/jni/MiraclJavaInterface/libMiraclJavaInterface$(JNI_LIB_EXT)
 JNI_OTEXTENSION:=src/jni/OtExtensionJavaInterface/libOtExtensionJavaInterface$(JNI_LIB_EXT)
+JNI_MALOTEXT:=src/jni/MaliciousOtExtensionJavaInterface/libMaliciousOtExtensionJavaInterface$(JNI_LIB_EXT)
 JNI_NTL:=src/jni/NTLJavaInterface/libNTLJavaInterface$(JNI_LIB_EXT)
 JNI_OPENSSL:=src/jni/OpenSSLJavaInterface/libOpenSSLJavaInterface$(JNI_LIB_EXT)
-JNI_TARGETS=jni-cryptopp jni-miracl jni-openssl jni-otextension jni-ntl
+JNI_OPENGARBLE:=src/jni/OpenGarbleJavaInterface/libOpenGarbleJavaInterface$(JNI_LIB_EXT)
+JNI_TARGETS=jni-cryptopp jni-miracl jni-openssl jni-otextension jni-malotext jni-ntl #jni-opengarble
 
 # basenames of created jars (apache commons, bouncy castle, scapi)
 #BASENAME_BOUNCYCASTLE:=bcprov-jdk15on-151b18.jar
@@ -102,7 +104,7 @@ INSTALL_DIR=$(libdir)/scapi
 SCRIPTS:=scripts/scapi.sh scripts/scapic.sh
 
 # external libs
-EXTERNAL_LIBS_TARGETS:=compile-cryptopp compile-miracl compile-openssl compile-otextension compile-ntl
+EXTERNAL_LIBS_TARGETS:=compile-cryptopp compile-miracl compile-openssl compile-otextension compile-malotext compile-ntl
 
 ## targets
 all: $(JNI_TARGETS) $(JAR_BOUNCYCASTLE) $(JAR_APACHE_COMMONS) compile-scapi
@@ -149,6 +151,14 @@ compile-otextension: compile-openssl compile-miracl-cpp
 	@$(MAKE) -C $(builddir)/OTExtension CXX=$(CXX) SHARED_LIB_EXT=$(SHARED_LIB_EXT) install
 	@touch compile-otextension
 
+# TODO:
+compile-malotext: compile-openssl compile-miracl-cpp
+	@echo "Compiling the Malicious OtExtension library..."
+	@cp -r lib/MaliciousOTExtension $(builddir)/MaliciousOTExtension
+	@$(MAKE) -C $(builddir)/MaliciousOTExtension CXX=$(CXX)
+	@$(MAKE) -C $(builddir)/MaliciousOTExtension CXX=$(CXX) SHARED_LIB_EXT=$(SHARED_LIB_EXT) install
+	@touch compile-malotext
+
 # TODO: add GMP and GF2X
 compile-ntl:
 	@echo "Compiling the NTL library..."
@@ -167,6 +177,13 @@ compile-openssl:
 	@$(MAKE) -C $(builddir)/OpenSSL install
 	@touch compile-openssl
 
+compile-opengarble:
+	@echo "Compiling the OpenGarble library..."
+	@cp -r lib/OpenGarble $(builddir)/OpenGarble
+	@$(MAKE) -C $(builddir)/OpenGarble
+	@$(MAKE) -C $(builddir)/OpenGarble install
+	@touch compile-opengarble
+
 compile-bouncycastle: $(JAR_BOUNCYCASTLE)
 compile-scapi: $(JAR_SCAPI)
 compile-scripts: $(SCRIPTS)
@@ -175,8 +192,10 @@ compile-scripts: $(SCRIPTS)
 jni-cryptopp: $(JNI_CRYPTOPP)
 jni-miracl: $(JNI_MIRACL)
 jni-otextension: $(JNI_OTEXTENSION)
+jni-malotext: $(JNI_MALOTEXT)
 jni-ntl: $(JNI_NTL)
 jni-openssl: $(JNI_OPENSSL)
+jni-opengarble: $(JNI_OPENGARBLE)
 
 # jni real targets
 $(JNI_CRYPTOPP): compile-cryptopp
@@ -194,6 +213,11 @@ $(JNI_OTEXTENSION): compile-otextension
 	@$(MAKE) -C src/jni/OtExtensionJavaInterface CXX=$(CXX)
 	@cp $@ assets/
 
+$(JNI_MALOTEXT): compile-malotext
+	@echo "Compiling the Malicious OtExtension jni interface..."
+	@$(MAKE) -C src/jni/MaliciousOtExtensionJavaInterface CXX=$(CXX)
+	@cp $@ assets/
+
 $(JNI_NTL): compile-ntl
 	@echo "Compiling the NTL jni interface..."
 	@$(MAKE) -C src/jni/NTLJavaInterface CXX=$(CXX)
@@ -202,6 +226,11 @@ $(JNI_NTL): compile-ntl
 $(JNI_OPENSSL): compile-openssl
 	@echo "Compiling the OpenSSL jni interface..."
 	@$(MAKE) -C src/jni/OpenSSLJavaInterface
+	@cp $@ assets/
+
+$(JNI_OPENGARBLE): compile-opengarble
+	@echo "Compiling the OpenGarble jni interface..."
+	@$(MAKE) -C src/jni/OpenGarbleJavaInterface
 	@cp $@ assets/
 
 # TODO: for now we avoid re-compiling bouncy castle, since it is very unstable,
@@ -261,6 +290,11 @@ clean-otextension:
 	@rm -rf $(builddir)/OTExtension
 	@rm -f compile-otextension
 
+clean-malotext:
+	@echo "Cleaning the malicious ot extension build dir..."
+	@rm -rf $(builddir)/MaliciousOTExtension
+	@rm -f compile-malotext
+
 clean-ntl:
 	@echo "Cleaning the ntl build dir..."
 	@rm -rf $(builddir)/NTL
@@ -270,6 +304,11 @@ clean-openssl:
 	@echo "Cleaning the openssl build dir..."
 	@rm -rf $(builddir)/OpenSSL
 	@rm -f compile-openssl
+
+clean-opengarble:
+	@echo "Cleaning the opengarble build dir..."
+	@rm -rf $(builddir)/OpenGarble
+	@rm -f compile-opengarble
 
 clean-bouncycastle:
 	@echo "Cleaning the bouncycastle build dir..."
@@ -289,6 +328,10 @@ clean-jni-otextension:
 	@echo "Cleaning the OtExtension jni build dir..."
 	@$(MAKE) -C src/jni/OtExtensionJavaInterface clean
 
+clean-jni-malotext:
+	@echo "Cleaning the Malicious Ot Extension jni build dir..."
+	@$(MAKE) -C src/jni/MaliciousOtExtensionJavaInterface clean
+
 clean-jni-ntl:
 	@echo "Cleaning the NTL jni build dir..."
 	@$(MAKE) -C src/jni/NTLJavaInterface clean
@@ -296,6 +339,10 @@ clean-jni-ntl:
 clean-jni-openssl:
 	@echo "Cleaning the OpenSSL jni build dir..."
 	@$(MAKE) -C src/jni/OpenSSLJavaInterface clean
+
+clean-jni-opengarble:
+	@echo "Cleaning the OpenGarble jni build dir..."
+	@$(MAKE) -C src/jni/OpenGarbleJavaInterface clean
 
 clean-jni-assets:
 	@echo "Cleaning the JNI assets..."

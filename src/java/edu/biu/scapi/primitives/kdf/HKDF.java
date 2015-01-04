@@ -45,6 +45,8 @@ import edu.biu.scapi.tools.Factories.PrfFactory;
  * Concrete class of key derivation function for HKDF.
  * This is a key derivation function that has a rigorous justification as to its security.
  * 
+ * Note that all deriveKey functions in this implementation are thread safe.
+ * 
   * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Meital Levy)
  */
 public final class HKDF implements KeyDerivationFunction {
@@ -191,66 +193,80 @@ public final class HKDF implements KeyDerivationFunction {
 	 *   K(1) = HMAC(PRK,(CTXinfo,1)) [key=PRK, data=(CTXinfo,1)]
 	 *   FOR i = 2 TO t
 	 *     K(i) = HMAC(PRK,(K(i-1),CTXinfo,i)) [key=PRK, data=(K(i-1),CTXinfo,i)]
-	 *   OUTPUT the first L bits of K(1),…,K(t)
+	 *   OUTPUT the first L bits of K(1),ï¿½,K(t)
 	 *   
 	 *   @param iv - CTXInfo 
 	 * 
+	 * Note that this function is thread safe!
 	 */
 	public SecretKey deriveKey(byte[] entropySource, int inOff, int inLen, int outLen, byte[] iv) {
-		
 		//checks that the offset and length are correct
 		if ((inOff > entropySource.length) || (inOff+inLen > entropySource.length)){
 			throw new ArrayIndexOutOfBoundsException("wrong offset for the given input buffer");
 		}
 		
-		//Sets the hmac object with a fixed key that was randomly generated once. This is done every time a new derived key is requested otherwise the result of deriving
-		//a key from the same entropy source will be different in subsequent calls to this function (as long as the same instance of HKDF is used). 
-		try {
-			hmac.setKey(new SecretKeySpec(Hex.decode("606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeaf"), ""));
-		} catch (InvalidKeyException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		int hmacLength = hmac.getBlockSize();                           //the size of the output of the hmac.
-		byte[] outBytes = new byte[outLen];                             //the output key
-		byte[] roundKey = new byte[hmacLength];							//PRK from the pseudocode
-		byte[] intermediateOutBytes = new byte[hmacLength];             //round result K(i) in the pseudocode
+		//In order to be thread safe we have to synchronized this function.
 		
+		//Consider the following situation: thread #1 calls the deriveKey function. It starts to derive the key, 
+		//calls the hmac setKey function and so on. In the meantime, thread #2 calls the deriveKey function as well.	
+		//Without synchronization, thread #2 will set the hmac object with the fixed key (what is done in the beginning of 
+		//the key derivation).
+		//This will delete all thread #1 work until that time and the results of the deriveKey will be wrong.
 		
-		//first computes the new key. The new key is the result of computing the hmac function.
-		try {
-			//roundKey is now K(0)
-			hmac.computeBlock(entropySource, 0, entropySource.length, roundKey, 0);
-		} catch (IllegalBlockSizeException e) {//should not happen since the roundKey is of the right size.
+		//By adding the synchronized block we let only one thread to be able execute the synchronized code at the same time. 
+		//All other threads attempting to enter the synchronized block are blocked until the thread inside the 
+		//synchronized block exits the block.
+		
+		synchronized(this){
+			//Sets the hmac object with a fixed key that was randomly generated once. This is done every time a new derived key is requested otherwise the result of deriving
+			//a key from the same entropy source will be different in subsequent calls to this function (as long as the same instance of HKDF is used). 
+			try {
+				hmac.setKey(new SecretKeySpec(Hex.decode("606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeaf"), ""));
+			} catch (InvalidKeyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			int hmacLength = hmac.getBlockSize();                           //the size of the output of the hmac.
+			byte[] outBytes = new byte[outLen];                             //the output key
+			byte[] roundKey = new byte[hmacLength];							//PRK from the pseudocode
+			byte[] intermediateOutBytes = new byte[hmacLength];             //round result K(i) in the pseudocode
 			
-			Logging.getLogger().log(Level.WARNING, e.toString());
+			
+			//first computes the new key. The new key is the result of computing the hmac function.
+			try {
+				//roundKey is now K(0)
+				hmac.computeBlock(entropySource, 0, entropySource.length, roundKey, 0);
+			} catch (IllegalBlockSizeException e) {//should not happen since the roundKey is of the right size.
+				
+				Logging.getLogger().log(Level.WARNING, e.toString());
+			}
+			
+			
+			//init the hmac with the new key. From now on this is the key for all the rounds.
+			try {
+				hmac.setKey(new SecretKeySpec(roundKey, "HKDF"));
+			} catch (InvalidKeyException e) {
+				//shoudln't happen since the key is the output of compute block and its length is ok
+				Logging.getLogger().log(Level.WARNING, e.toString());
+			}
+			
+			//calculates the first round
+			//K(1) = HMAC(PRK,(CTXinfo,1)) [key=PRK, data=(CTXinfo,1)]
+			if (outLen < hmacLength){
+				firstRound(outBytes, iv, intermediateOutBytes, outLen);
+			} else {
+				firstRound(outBytes, iv, intermediateOutBytes, hmacLength);
+			}
+			
+			//calculates the next rounds
+			//FOR i = 2 TO t
+			//K(i) = HMAC(PRK,(K(i-1),CTXinfo,i)) [key=PRK, data=(K(i-1),CTXinfo,i)]
+			nextRounds(outLen, iv, hmacLength, outBytes, 
+					intermediateOutBytes);
+			
+			//creates the secret key from the generated bytes
+			return new SecretKeySpec(outBytes, "HKDF");
 		}
-		
-		
-		//init the hmac with the new key. From now on this is the key for all the rounds.
-		try {
-			hmac.setKey(new SecretKeySpec(roundKey, "HKDF"));
-		} catch (InvalidKeyException e) {
-			//shoudln't happen since the key is the output of compute block and its length is ok
-			Logging.getLogger().log(Level.WARNING, e.toString());
-		}
-		
-		//calculates the first round
-		//K(1) = HMAC(PRK,(CTXinfo,1)) [key=PRK, data=(CTXinfo,1)]
-		if (outLen < hmacLength){
-			firstRound(outBytes, iv, intermediateOutBytes, outLen);
-		} else {
-			firstRound(outBytes, iv, intermediateOutBytes, hmacLength);
-		}
-		
-		//calculates the next rounds
-		//FOR i = 2 TO t
-		//K(i) = HMAC(PRK,(K(i-1),CTXinfo,i)) [key=PRK, data=(K(i-1),CTXinfo,i)]
-		nextRounds(outLen, iv, hmacLength, outBytes, 
-				intermediateOutBytes);
-		
-		//creates the secret key from the generated bytes
-		return new SecretKeySpec(outBytes, "HKDF");
 		
 	}
 

@@ -38,10 +38,10 @@ import edu.biu.scapi.comm.Channel;
  * states. <P>
  * EstablishedSocketConnections has regular operations of containers such as add and remove. 
  * It also has logical operations such as areAllConnected.<p>
- * At the end of the “prepare for communication” method, the calling application receives a map of connections in the 
+ * At the end of the ï¿½prepare for communicationï¿½ method, the calling application receives a map of connections in the 
  * EstablishedConnections object held by the CommunicationSetup. At this stage, all the channels in EstablishedConnections 
  * object need to be in READY state. 
- * It is possible that this object will be null if the “prepare for communication” did not succeed. 
+ * It is possible that this object will be null if the ï¿½prepare for communicationï¿½ did not succeed. 
  * The key to the map is the id of the connection.    
  * 
  * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Moriya Farbstein)
@@ -203,6 +203,16 @@ class EstablishedSocketConnections {
 			//Close the channel.
 			channel.close();
 		}
+	}
+	
+	/**
+	 * Removes all connections from the map. 
+	 * This function can be called in case of timeout, for example.
+	 */
+	void removeAllConnections(){
+		
+		connectionsMap.clear();
+		 
 	}
 
 }

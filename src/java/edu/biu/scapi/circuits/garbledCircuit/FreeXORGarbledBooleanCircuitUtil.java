@@ -45,8 +45,7 @@ import edu.biu.scapi.primitives.prg.PseudorandomGenerator;
 /**
  * The {@code FreeXORGarbledBooleanCircuitUtil} uses the Free XOR technique that is explained in depth in <i>Free XOR Gates and 
  * Applications</i> by Validimir Kolesnikov and Thomas Schneider. <p>
- * This circuit's computing method chooses the wire numbers according to the procedure delineated in the above described paper. 
- * It then replaces all XOR gates with {@code FreeXOR gates} and these gates can be computed without an encryption due to the way the 
+ * This circuit replace all XOR gates with {@code FreeXOR gates} and these gates can be computed without an encryption due to the way the 
  * wire's values were chosen. See the above paper also for a proof of security of this method. <p>
  * 
  * Note also that the {@link #compute()} method of {@code FreeXORGarbledBooleanCircuitUtil} is not different than the standard

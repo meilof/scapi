@@ -48,4 +48,22 @@ public class QueuePartyData implements PartyData{
 		return id;
 	}
 	
+	@Override
+	public boolean equals(Object c){
+		if (!(c instanceof QueuePartyData)){
+			return false;
+		}
+		QueuePartyData otherParty = (QueuePartyData) c;
+		if (id == otherParty.getId()){
+			return true;
+		}
+		return true;
+		
+	}
+	@Override
+	public int hashCode() {
+		return id;
+	}
+	
+	
 }

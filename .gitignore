@@ -16,3 +16,4 @@ install/*
 *.iml
 *.log
 target/*
+.settings

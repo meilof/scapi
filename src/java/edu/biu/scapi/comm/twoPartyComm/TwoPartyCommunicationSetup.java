@@ -26,6 +26,7 @@
 package edu.biu.scapi.comm.twoPartyComm;
  
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 import edu.biu.scapi.comm.Channel;
 
@@ -46,8 +47,7 @@ import edu.biu.scapi.comm.Channel;
  * usage follows:<p>
  * <ul>
  * <li>Instantiate an object of type TwoPartyCommunicationSetup.</li>
- * <li>Call the prepareForCommunication method of that object with two parties to connect to and other setup parameters. 
- * (prepareForCommunication is the only public method of this class).</li>
+ * <li>Call the prepareForCommunication method of that object with two parties to connect to and other setup parameters.</li>
  * <li>Get from prepareForCommunication a container holding all ready connections.</li>
  * <li>Start the two party protocol.</li> 
  * <li>Call the send and receive methods of the ready connections as needed by the protocol.</li>
@@ -72,13 +72,15 @@ public interface TwoPartyCommunicationSetup {
 	 * in order to make it easier and more convenient to understand what is the usage of each connection.<p>
 	 * If this function succeeds, the application may use the send and receive functions of the created channels to 
 	 * pass messages.<p> 
-	 * In this function, Nagle’s algorithm is disabled; for cryptographic protocols this is typically much better.
+	 * In this function, Nagle's algorithm is disabled; for cryptographic protocols this is typically much better. 
+	 * In order to use the Nagle algorithm, call the enableNagle() function.
 	 * 
 	 * @param connectionsIds Each required connection's name.
 	 * @param timeOut the maximum amount of time we allow for the connection stage.
 	 * @return a map contains the connected channels. The key to the map is the id of the connection.
+	 * @throws TimeoutException in case a timeout has occurred before all channels have been connected.
 	 */
-	public Map<String, Channel> prepareForCommunication(String[] connectionsIds, long timeOut);
+	public Map<String, Channel> prepareForCommunication(String[] connectionsIds, long timeOut) throws TimeoutException;
 	
 	/**
 	 * An application that wants to use the communication layer will call this function in order to prepare for 
@@ -91,13 +93,15 @@ public interface TwoPartyCommunicationSetup {
 	 * according to their index. i.e the first connection's name is "1", the second is "2" and so on.<p>
 	 * If this function succeeds, the application may use the send and receive functions of the created channels to 
 	 * pass messages.<p> 
-	 * Note that using this function you can choose to use or not to use the Nagle algorithm.
+	 * In this function, Nagle's algorithm is disabled; for cryptographic protocols this is typically much better. 
+	 * In order to use the Nagle algorithm, call the enableNagle() function.
 	 * 
 	 * @param connectionsNum The number of requested connections.
 	 * @param timeOut the maximum amount of time we allow for the connection stage.
 	 * @return a map contains the connected channels. The key to the map is the id of the connection.
+	 * @throws TimeoutException in case a timeout has occurred before all channels have been connected.
 	 */
-	public Map<String, Channel> prepareForCommunication(int connectionsNum, long timeOut);
+	public Map<String, Channel> prepareForCommunication(int connectionsNum, long timeOut) throws TimeoutException;
 	
 	/**
 	 * Enables to use Nagle algrithm in the communication. <p>

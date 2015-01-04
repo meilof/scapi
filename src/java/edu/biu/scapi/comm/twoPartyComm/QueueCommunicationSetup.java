@@ -27,6 +27,7 @@ package edu.biu.scapi.comm.twoPartyComm;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import javax.jms.Connection;
@@ -38,27 +39,38 @@ import org.apache.commons.exec.Watchdog;
 
 import edu.biu.scapi.comm.Channel;
 import edu.biu.scapi.exceptions.DuplicatePartyException;
+import edu.biu.scapi.exceptions.ScapiRuntimeException;
 import edu.biu.scapi.generals.Logging;
 
 /**
  * A communication setup class that uses the JMS API for sending and receiving messages.<p>
- * This means that the connections are not peer to peer, instead there is a server that any one of the parties communicates with.
- * The server keeps two queues between each couple of parties; one of them is used to p1 to send messages and p2 receives
- * them, and the other is used to p2 to send messages and p1 receives them. <p>
+ * This implementation uses the JMS API for sending and receiving messages.
  * 
  * JMS enables distributed communication that is loosely coupled. A component sends a message to a destination, 
- * and the recipient can retrieve the message from the destination. 
- * However, the sender and the receiver do not have to be available at the same time in order to communicate. 
- * In fact, the sender does not need to know anything about the receiver; nor does the receiver need to know anything 
- * about the sender. The sender and the receiver need to know only which message format and which destination to use.
- * In this respect, messaging differs from tightly coupled technologies, such as Remote Method Invocation (RMI), 
- * which require an application to know a remote application�s methods.<p>
+ * and the recipient can retrieve the message from the destination. However, the sender and the receiver do not 
+ * have to be available at the same time in order to communicate. In fact, the sender does not need to know 
+ * anything about the receiver; nor does the receiver need to know anything about the sender. The sender and 
+ * the receiver only need to know which message format and which destination to use. In this respect, messaging 
+ * differs from tightly coupled technologies, like Remote Method Invocation (RMI), which require an application to 
+ * know a remote application’s methods. Moreover, the JMS API knows how to automatically recover from communication 
+ * failures; in case a connection falls during the communication, it is automatically reconnected. 
+ * In addition, messages cannot get lost in the communication. A queue is therefore a far more robust method of communication.
+ * 
+ * In SCAPI’s implementation, the server manages two queues between each pair of parties P1 and P2; 
+ * one of them is used for P1 to send messages and for P2 to receive them, and the other is used for P2 to send 
+ * messages and for P1 to receive them.
  * 
  * This class work on any concrete implementation, by getting the concrete ConnectionFactory in the constructor.
  * Along with the factory, the constructor should accept a concrete instance of DestroyDestinationUtil that
  * deletes the queues created by the connection of the given factory. 
  * For example, if the factory is ActiveMQConnectionFactory than the util instance should be ActiveMQDestroyer.
  * 
+ * Note that in JMS the parameters of the connection are given in the uri of the factory. For that reason, after the factory
+ * has been created there is no possibility to change the communication parameters. 
+ * For example, enableNagle function throws an exception since the enabling/disabling of Nagle's algorithm was already
+ * determined in the factory uri.
+ * It is up to the user to give the parameters he wants in the factory uri. 
+ *  
  * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Moriya Farbstein)
  *
  */
@@ -66,12 +78,13 @@ public class QueueCommunicationSetup implements TwoPartyCommunicationSetup, Time
 	private ConnectionFactory connectionFactory;
 	private Connection connection;			// The JMS object used to create the producers and consumers.
 	private int connectionsNumber;
-	protected static boolean enableNagle = false;
 	private boolean bTimedOut = false; 		//Indicated whether or not to end the communication.
 	private Watchdog watchdog;				//Used to measure times.
 	QueuePartyData me;						//The data of the current application.
 	QueuePartyData other;					//The data of the other application to communicate with.
 	DestroyDestinationUtil destroyer;
+	
+	protected QueueCommunicationSetup(){}
 	
 	/**
 	 * A constructor that set the given parties and start a connection.
@@ -83,6 +96,13 @@ public class QueueCommunicationSetup implements TwoPartyCommunicationSetup, Time
 	 * @throws DuplicatePartyException 
 	 */
 	public QueueCommunicationSetup(ConnectionFactory factory, DestroyDestinationUtil destroyer, PartyData me, PartyData party) throws DuplicatePartyException{
+		doConstruct(factory, destroyer, me, party); 
+		
+		
+	}
+
+	protected void doConstruct(ConnectionFactory factory, DestroyDestinationUtil destroyer, PartyData me, PartyData party)
+			throws DuplicatePartyException {
 		//Check that the party is the right object.
 		if (!(me instanceof QueuePartyData) && !(party instanceof QueuePartyData)){
 			throw new IllegalArgumentException("each party in the list must be an instance of JMSParty");
@@ -106,13 +126,12 @@ public class QueueCommunicationSetup implements TwoPartyCommunicationSetup, Time
 			
 		} catch (JMSException e) {
 			throw new edu.biu.scapi.exceptions.JMSException(e.getMessage());
-		} 
-		
+		}
 		connectionsNumber = 0;
 	}
 	
 	@Override
-	public Map<String, Channel> prepareForCommunication(int connectionsNum, long timeOut) {
+	public Map<String, Channel> prepareForCommunication(int connectionsNum, long timeOut) throws TimeoutException {
 		//Prepare the connections Ids using the default implementation, meaning the connections are numbered 
 		//according to their index. i.e the first connection's name is "1", the second is "2" and so on.
 		String[] names = new String[connectionsNum];
@@ -126,7 +145,7 @@ public class QueueCommunicationSetup implements TwoPartyCommunicationSetup, Time
 	
 	
 	@Override
-	public Map<String, Channel> prepareForCommunication(String[] connectionsIds, long timeOut){
+	public Map<String, Channel> prepareForCommunication(String[] connectionsIds, long timeOut) throws TimeoutException{
 		//Start the watch dog with the given timeout.
 		watchdog = new Watchdog(timeOut);
 		//Add this instance as the observer in order to receive the event of time out.
@@ -146,6 +165,15 @@ public class QueueCommunicationSetup implements TwoPartyCommunicationSetup, Time
 		
 		watchdog.stop();
 		
+		if (bTimedOut){
+			Object[] channels = connectedChannels.values().toArray();
+			int len = channels.length;
+			for (int i=0; i<len; i++){
+				((Channel) channels[i]).close();
+			}
+			throw new TimeoutException("timeout has occurred");
+		}
+		
 		return connectedChannels;
 	}
 	
@@ -159,10 +187,12 @@ public class QueueCommunicationSetup implements TwoPartyCommunicationSetup, Time
 		}
 	}
 
+	/**
+	 * In Queue communication enabling Nagle algorithm can be done in construction time only, when 
+	 * creating the factory object used to create the connection.
+	 */
 	public void enableNagle(){
-		//Set to true the boolean indicates whether or not to use the Nagle optimization algorithm. 
-		//For Cryptographic algorithms is better to have it disabled.
-		QueueCommunicationSetup.enableNagle  = true;
+		throw new ScapiRuntimeException("In Queue communication enabling Nagle algorithm can be done in construction time only");
 	}
 	
 	@Override

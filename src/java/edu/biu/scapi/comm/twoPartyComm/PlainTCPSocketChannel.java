@@ -45,7 +45,7 @@ import edu.biu.scapi.generals.Logging;
  * This class represents a concrete channel in the Decorator Pattern used to create Channels. This channel ensures TCP 
  * type of communication.
  * In order to enforce the right usage of the Channel class we will restrict the ability to instantiate one, 
- * only to classes within the Communication Layer’s package. This means that the constructor of the channel will be 
+ * only to classes within the Two Party Communication Layer's package. This means that the constructor of the channel will be 
  * unreachable from another package. However, the send, receive and close functions will be declared public, therefore 
  * allowing anyone holding a channel to be able to use them.
  *  
@@ -56,7 +56,7 @@ import edu.biu.scapi.generals.Logging;
  * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Moriya Farbstein)
  *
  */
-class PlainTCPSocketChannel implements Channel{
+public class PlainTCPSocketChannel implements Channel{
 	
 	/**
 	 * A channel has a state. It can be either NOT_INIT,CONNECTING or READY.
@@ -91,15 +91,17 @@ class PlainTCPSocketChannel implements Channel{
 			
 	}
 	
-	protected State state;						// The state of the channel.
-	protected Socket sendSocket;					//A socket used to send messages.
+	private State state;						// The state of the channel.
+	protected Socket sendSocket;				//A socket used to send messages.
 	private Socket receiveSocket;				//A socket used to receive messages.
 	protected ObjectOutputStream outStream;		//Used to send a message
 	private ObjectInputStream inStream;			//Used to receive a message.
 	protected InetSocketAddress socketAddress;	//The address of the other party.
 	private Message intermediate;
 	private Message msgObj;
-	byte[] msgBytes;
+	private byte[] msgBytes;
+	private SocketPartyData me;					//Used to send the identity if needed.
+	protected boolean checkIdentity;			//Indicated if there is a need to verify identity.
 
 	/**
 	 * A constructor that set the state of this channel to not ready.
@@ -114,20 +116,21 @@ class PlainTCPSocketChannel implements Channel{
 	 * @param ipAddress other party's IP address.
 	 * @param port other party's port.
 	 */
-	PlainTCPSocketChannel(InetAddress ipAddress, int port) {
+	PlainTCPSocketChannel(InetAddress ipAddress, int port, boolean checkIdentity, SocketPartyData me) {
 		
-		this();
-		socketAddress = new InetSocketAddress(ipAddress, port);
+		this(new InetSocketAddress(ipAddress, port), checkIdentity, me);
 	}
 	
 	/**
 	 * A constructor that set the given socket address and set the state of this channel to not ready.
 	 * @param socketAddress other end's InetSocketAddress
 	 */
-	PlainTCPSocketChannel(InetSocketAddress socketAddress) {
+	PlainTCPSocketChannel(InetSocketAddress socketAddress, boolean checkIdentity, SocketPartyData me) {
 		
 		this();
 		this.socketAddress = socketAddress;
+		this.checkIdentity = checkIdentity;
+		this.me = me;
 	}
 
 	/**
@@ -141,7 +144,7 @@ class PlainTCPSocketChannel implements Channel{
 	/**
 	 * Sets the state of the channel. 
 	 */
-	void setState(State state) {
+	public void setState(State state) {
 		this.state = state; 
 		
 	}
@@ -238,9 +241,13 @@ class PlainTCPSocketChannel implements Channel{
 			
 			if(sendSocket.isConnected()){
 				
+				if (checkIdentity){
+					sendIdentity();
+				}
+				
 				Logging.getLogger().log(Level.INFO, "Socket connected");
 				outStream = new ObjectOutputStream(sendSocket.getOutputStream());
-				
+					
 				//After the send socket is connected, need to check if the receive socket is also connected.
 				//If so, set the channel state to READY.
 				setReady();
@@ -249,6 +256,11 @@ class PlainTCPSocketChannel implements Channel{
 			
 			Logging.getLogger().log(Level.FINEST, e.toString());
 		}
+	}
+
+	protected void sendIdentity() throws IOException {
+		byte[] port = Integer.toString(me.getPort()).getBytes();
+		sendSocket.getOutputStream().write(port, 0, port.length);
 	}
 	
 	/**
@@ -270,7 +282,7 @@ class PlainTCPSocketChannel implements Channel{
 	 * @param socket the receive socket to set.
 	 * 		
 	 */
-	void setReceiveSocket(Socket socket) {
+	public void setReceiveSocket(Socket socket) {
 		this.receiveSocket = socket;
 		
 		try {
