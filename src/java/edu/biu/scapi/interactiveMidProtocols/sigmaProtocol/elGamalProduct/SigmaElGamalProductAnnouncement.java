@@ -22,32 +22,39 @@
 * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 * 
 */
-package edu.biu.scapi.interactiveMidProtocols.sigmaProtocol.dhExtended;
-
-import java.util.ArrayList;
+package edu.biu.scapi.interactiveMidProtocols.sigmaProtocol.elGamalProduct;
 
 import edu.biu.scapi.interactiveMidProtocols.sigmaProtocol.utility.SigmaProtocolMsg;
 import edu.biu.scapi.primitives.dlog.GroupElementSendableData;
 
 /**
- * Concrete implementation of SigmaProtocol message. 
- * This message contains an array of GroupElementSendableData and used when the DHExtended prover sends the first message to the verifier.
+ * Concrete implementation SigmaProtocol message. <p>
+ * This message contains two GroupElement sendable data and used when the DH prover send the first message to the verifier.
  * 
  * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Moriya Farbstein)
  *
  */
-public class SigmaDHExtendedMsg implements SigmaProtocolMsg {
+public class SigmaElGamalProductAnnouncement implements SigmaProtocolMsg {
 
-	private static final long serialVersionUID = 3688239370237225167L;
+	private static final long serialVersionUID = 1208840175220495797L;
 	
-	private ArrayList<GroupElementSendableData> aArray;
+	private GroupElementSendableData a1;
+	private GroupElementSendableData a2;
+	private GroupElementSendableData a3;
+	private GroupElementSendableData a4;
 	
-	public SigmaDHExtendedMsg(ArrayList<GroupElementSendableData> aArray){
-		this.aArray = aArray;
+	public SigmaElGamalProductAnnouncement(GroupElementSendableData a1,
+			                                      GroupElementSendableData a2,
+			                                      GroupElementSendableData a3,
+			                                      GroupElementSendableData a4) {
+		this.a1 = a1;
+		this.a2 = a2;
+		this.a3 = a3;
+		this.a4 = a4;
 	}
 	
-	public ArrayList<GroupElementSendableData> getArray(){
-		return aArray;
-	} 
-
+	public GroupElementSendableData getA1() { return a1; }
+	public GroupElementSendableData getA2() { return a2; }
+	public GroupElementSendableData getA3() { return a3; }
+	public GroupElementSendableData getA4() { return a4; }
 }

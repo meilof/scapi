@@ -22,32 +22,54 @@
 * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 * 
 */
-package edu.biu.scapi.interactiveMidProtocols.sigmaProtocol.dhExtended;
+package edu.biu.scapi.interactiveMidProtocols.sigmaProtocol.elGamalProduct;
 
-import java.util.ArrayList;
+import java.math.BigInteger;
 
-import edu.biu.scapi.interactiveMidProtocols.sigmaProtocol.utility.SigmaProtocolMsg;
-import edu.biu.scapi.primitives.dlog.GroupElementSendableData;
+import edu.biu.scapi.interactiveMidProtocols.sigmaProtocol.utility.SigmaProverInput;
+import edu.biu.scapi.midLayer.asymmetricCrypto.keys.ElGamalPublicKey;
+import edu.biu.scapi.midLayer.ciphertext.ElGamalOnGroupElementCiphertext;
 
 /**
- * Concrete implementation of SigmaProtocol message. 
- * This message contains an array of GroupElementSendableData and used when the DHExtended prover sends the first message to the verifier.
+ * Concrete implementation of SigmaProtocol input, used by the SigmaElGamalCommittedValueProver.<p>
+ * In SigmaElGamalCommittedValue protocol, the prover gets an ElGamal commitment message, 
+ * the value committed x and the value r in Zq such that c1=g^r and c2 =h^r*x.
  * 
  * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Moriya Farbstein)
  *
  */
-public class SigmaDHExtendedMsg implements SigmaProtocolMsg {
-
-	private static final long serialVersionUID = 3688239370237225167L;
+public class SigmaElGamalProductProverInput implements SigmaProverInput{
 	
-	private ArrayList<GroupElementSendableData> aArray;
+	private SigmaElGamalProductCommonInput params;
+	private BigInteger x2, r2, r3;
 	
-	public SigmaDHExtendedMsg(ArrayList<GroupElementSendableData> aArray){
-		this.aArray = aArray;
+	/**
+	 * Sets the given public key, commitment, committed value and random value used to commit.
+	 * @param publicKey used to commit
+	 * @param commitment actual commitment value outputed from the commitment scheme on the given committed value.
+	 * @param x committed value
+	 * @param r random value used to commit.
+	 */
+	public SigmaElGamalProductProverInput(ElGamalPublicKey publicKey,
+			ElGamalOnGroupElementCiphertext a, 
+			ElGamalOnGroupElementCiphertext b, 
+			ElGamalOnGroupElementCiphertext ab, 
+			BigInteger x2,
+			BigInteger r2,
+			BigInteger r3){
+		params = new SigmaElGamalProductCommonInput(publicKey, a, b, ab);
+		this.x2 = x2;
+		this.r2 = r2;
+		this.r3 = r3;
 	}
 	
-	public ArrayList<GroupElementSendableData> getArray(){
-		return aArray;
-	} 
+	public BigInteger getX2() { return x2; }
+	public BigInteger getR2() { return r2; }
+	public BigInteger getR3() { return r3; }
 
+	@Override
+	public SigmaElGamalProductCommonInput getCommonParams() {
+		return params;
+	}
+	
 }

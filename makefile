@@ -83,14 +83,15 @@ JNI_TARGETS=jni-cryptopp jni-miracl jni-openssl jni-otextension jni-ntl
 BASENAME_BOUNCYCASTLE:=bcprov-jdk15on-150.jar
 BASENAME_APACHE_COMMONS:=commons-exec-1.2.jar
 BASENAME_JUNIT:=junit-3.7.jar
-BASENAME_SCAPI:=Scapi-V2-3-0.jar
+BASENAME_SCAPI:=Scapi-V2-3-0x.jar
 
 # target names of created jars (apache commons, bouncy castle, scapi)
 #JAR_BOUNCYCASTLE:=$(builddir)/BouncyCastle/jars/$(BASENAME_BOUNCYCASTLE)
 JAR_BOUNCYCASTLE:=assets/$(BASENAME_BOUNCYCASTLE)
 JAR_APACHE_COMMONS:=assets/$(BASENAME_APACHE_COMMONS)
 JAR_JUNIT:=$(shell pwd)/assets/$(BASENAME_JUNIT)
-JAR_SCAPI:=$(builddir)/scapi/$(BASENAME_SCAPI)
+JAR_SCAPI_BUILD:=$(builddir)/scapi/$(BASENAME_SCAPI)
+JAR_SCAPI:=assets/$(BASENAME_SCAPI)
 
 # ntl
 NTL_CFLAGS="-fPIC -O2"
@@ -214,10 +215,10 @@ $(JAR_BOUNCYCASTLE):
 #	@cp $(builddir)/BouncyCastle/build/artifacts/jdk1.5/jars/bcprov-jdk* assets/
 #	@touch compile-bouncycastle
 
-$(JAR_SCAPI): $(JAR_BOUNCYCASTLE) $(JAR_APACHE_COMMONS)
+$(JAR_SCAPI): $(JAR_SCAPI_BUILD) $(JAR_BOUNCYCASTLE) $(JAR_APACHE_COMMONS)
 	@echo "Compiling the SCAPI java code..."
 	@ant
-	@cp $@ assets/
+	@cp $(JAR_SCAPI_BUILD) assets/
 
 scripts/scapi.sh: scripts/scapi.sh.tmpl
 	sed -e "s;%SCAPIDIR%;$(INSTALL_DIR);g" -e "s;%APACHECOMMONS%;$(BASENAME_APACHE_COMMONS);g" \

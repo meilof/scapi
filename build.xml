@@ -4,12 +4,14 @@
   <!--build properties-->
   <property name="scapi.build.directory" value="build/scapi"/>
   <property name="scapi.build.output" value="build/scapi/classes"/>
-  <property name="scapi.build.version" value="2-3-0"/>
+  <property name="scapi.build.version" value="2-3-0x"/>
   <property name="scapi.build.final.name" value="Scapi-V${scapi.build.version}"/>
 
   <!--external dependencies-->
   <property name="scapi.depend.bouncycastle.filename" value="bcprov-jdk15on-150"/>
   <property name="scapi.depend.apachecommons.filename" value="commons-exec-1.2"/>
+  <property name="scapi.depend.activemq.filename" value="activemq-core"/>
+  <property name="scapi.depend.jms.filename" value="jms"/>
   
   <!--paths-->
   <path id="bouncy-castle">
@@ -20,6 +22,14 @@
     <pathelement location="assets/${scapi.depend.apachecommons.filename}.jar"/>
   </path>
   
+  <path id="activemq">
+    <pathelement location="assets/${scapi.depend.activemq.filename}.jar"/>
+  </path>
+
+  <path id="jms">
+    <pathelement location="assets/${scapi.depend.jms.filename}.jar"/>
+  </path>
+
   <!--targets-->
   <target name="clean" description="Clean the output directory">
     <delete dir="${scapi.build.directory}"/>
@@ -33,7 +43,9 @@
       </src>
       <classpath>
         <path refid="bouncy-castle"/>
-	<path refid="apache-commons-exec"/>
+        <path refid="apache-commons-exec"/>
+        <path refid="activemq"/>
+        <path refid="jms"/>
       </classpath>
     </javac>
   </target>

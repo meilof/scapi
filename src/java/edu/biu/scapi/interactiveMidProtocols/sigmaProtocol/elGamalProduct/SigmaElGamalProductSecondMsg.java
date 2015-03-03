@@ -1,7 +1,7 @@
 /**
 * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 * 
-* Copyright (c) 2012 - SCAPI (http://crypto.biu.ac.il/scapi)
+* Copyright (c) 2014 - SCAPI (http://crypto.biu.ac.il/scapi)
 * This file is part of the SCAPI project.
 * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 * 
@@ -22,32 +22,43 @@
 * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 * 
 */
-package edu.biu.scapi.interactiveMidProtocols.sigmaProtocol.dhExtended;
+package edu.biu.scapi.interactiveMidProtocols.sigmaProtocol.elGamalProduct;
 
-import java.util.ArrayList;
+import java.math.BigInteger;
 
 import edu.biu.scapi.interactiveMidProtocols.sigmaProtocol.utility.SigmaProtocolMsg;
-import edu.biu.scapi.primitives.dlog.GroupElementSendableData;
 
 /**
  * Concrete implementation of SigmaProtocol message. 
- * This message contains an array of GroupElementSendableData and used when the DHExtended prover sends the first message to the verifier.
+ * This message contains three BigIntegers and used when the DamgardJurikProduct2 prover send the second message to the verifier.
  * 
- * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Moriya Farbstein)
+ * @author Eindhoven University of Technology (Meilof Veeningen)
  *
  */
-public class SigmaDHExtendedMsg implements SigmaProtocolMsg {
-
-	private static final long serialVersionUID = 3688239370237225167L;
+public class SigmaElGamalProductSecondMsg implements SigmaProtocolMsg{
 	
-	private ArrayList<GroupElementSendableData> aArray;
+	private static final long serialVersionUID = 7757453686631407543L;
 	
-	public SigmaDHExtendedMsg(ArrayList<GroupElementSendableData> aArray){
-		this.aArray = aArray;
+	private BigInteger z1;
+	private BigInteger z2;
+	private BigInteger z3;
+	
+	public SigmaElGamalProductSecondMsg(BigInteger z1, BigInteger z2, BigInteger z3){
+		this.z1 = z1;
+		this.z2 = z2;
+		this.z3 = z3;
 	}
 	
-	public ArrayList<GroupElementSendableData> getArray(){
-		return aArray;
-	} 
+	public BigInteger getZ1(){
+		return z1;
+	}
+	
+	public BigInteger getZ2(){
+		return z2;
+	}
+	
+	public BigInteger getZ3(){
+		return z3;
+	}
 
 }
