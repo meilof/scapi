@@ -49,23 +49,35 @@ class SocketListenerThread extends Thread{
 	protected boolean bStopped = false;			//A flag that indicates if to keep on listening or stop.
 	protected ServerSocket listener;		//Channel to listen on.
 
-
+	SocketListenerThread(){
+		
+	}
 	/**
 	* A constructor that open the server socket.
 	* @param channels the channels that should be set with receive socket.
 	* @param me the data of the current application.
 	* @param partyAdd The address to listen on.
 	*/
-	public SocketListenerThread(PlainTCPSocketChannel[] channels, SocketPartyData me, InetAddress partyAdd) {
+	SocketListenerThread(PlainTCPSocketChannel[] channels, SocketPartyData me, InetAddress partyAdd) {
 	
-		this.channels = channels;
-		this.partyAddr = partyAdd;
-		
-		CreateServerSocket(me);
+		doConstruct(channels, me, partyAdd);
 	}
 
 
-	protected void CreateServerSocket(SocketPartyData me) {
+	protected void doConstruct(PlainTCPSocketChannel[] channels, SocketPartyData me, InetAddress partyAdd) {
+		
+		this.channels = channels;
+		this.partyAddr = partyAdd;
+		
+		createServerSocket(me);
+	}
+
+
+	/**
+	 * Created the {@link ServerSocketChannel}.
+	 * @param me
+	 */
+	protected void createServerSocket(SocketPartyData me) {
 		//prepare the listener.
 		try {
 			ServerSocketChannel channel = ServerSocketChannel.open();
@@ -84,7 +96,7 @@ class SocketListenerThread extends Thread{
 	* Sets the flag bStopped to false. In the run function of this thread this flag is checked - 
 	* if the flag is true the run functions returns, otherwise continues.
 	*/
-	public void stopConnecting(){
+	void stopConnecting(){
 	
 		//Set the flag to true.
 		bStopped = true;
@@ -114,9 +126,9 @@ class SocketListenerThread extends Thread{
 			SocketChannel socketChannel = null;
 			try {
 			
-				//Use the server socket to listen to incoming connections.
 				Logging.getLogger().log(Level.INFO, "Trying to listen "+ listener.getLocalPort());
 				
+				//Use the server socket to listen to incoming connections.
 				socketChannel = listener.getChannel().accept();
 			
 			}	catch (ClosedChannelException e) {

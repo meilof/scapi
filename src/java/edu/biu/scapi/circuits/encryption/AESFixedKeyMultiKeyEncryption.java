@@ -80,9 +80,13 @@ public class AESFixedKeyMultiKeyEncryption implements MultiKeyEncryptionScheme {
 	private boolean isFreeXor = false; 
 
 	public AESFixedKeyMultiKeyEncryption() {
-		aes = new CryptoPpAES();
+		this(new CryptoPpAES());
+	}
+	
+	public AESFixedKeyMultiKeyEncryption(AES aes) {
+		this.aes = aes;
 		try {
-			aes.setKey(FIXED_KEY);
+			this.aes.setKey(FIXED_KEY);
 		} catch (InvalidKeyException e) {
 			// This should not occur since the fixed key should be valid.
 		}
@@ -110,6 +114,16 @@ public class AESFixedKeyMultiKeyEncryption implements MultiKeyEncryptionScheme {
 	
 	@Override
 	public byte[] encrypt(byte[] plaintext) throws KeyNotSetException, TweakNotSetException, IllegalBlockSizeException {
+		return processRow(plaintext);
+	}
+	
+	@Override
+	public byte[] decrypt(byte[] ciphertext) throws KeyNotSetException, TweakNotSetException, IllegalBlockSizeException {
+		return processRow(ciphertext);
+	}
+
+	private byte[] processRow(byte[] plaintext) throws KeyNotSetException,
+			TweakNotSetException, IllegalBlockSizeException {
 		if (!isKeySet) {
 			throw new KeyNotSetException();
 		}
@@ -158,51 +172,6 @@ public class AESFixedKeyMultiKeyEncryption implements MultiKeyEncryptionScheme {
 			outBytes[byteNumber] ^= plaintext[byteNumber];
 		}
 
-		return outBytes;
-	}
-
-	@Override
-	public byte[] decrypt(byte[] ciphertext) throws KeyNotSetException, TweakNotSetException, IllegalBlockSizeException {
-		if (!isKeySet) {
-			throw new KeyNotSetException();
-		}
-		if (!isTweakSet) {
-			throw new TweakNotSetException();
-		}
-		SecretKey[] keys = key.getKeys();
-		byte[] inBytes;
-		if (isFreeXor){
-			inBytes = shiftLeft(keys[0].getEncoded());
-		} else {
-			inBytes = keys[0].getEncoded();
-		}
-		for (int i = 1; i < keys.length; i++) {
-			byte[] currKeyBytes;
-			if (isFreeXor){	
-				currKeyBytes = shiftRight(keys[i].getEncoded());
-			} else {
-				currKeyBytes = keys[i].getEncoded();
-			}
-			for (int byteNumber = 0; byteNumber < inBytes.length; byteNumber++) {
-				inBytes[byteNumber] ^= currKeyBytes[byteNumber];
-			}
-		}
-		for (int byteNumber = 0; byteNumber < inBytes.length; byteNumber++) {
-			inBytes[byteNumber] ^= tweak[byteNumber];
-		}
-		byte[] outBytes = new byte[KEY_SIZE / 8];
-		/*
-		 * At this point inBytes contains the wire values XOR's with each other XOR'd with the tweak. 
-		 * This is referred to as K in section 5.6 of "Garbling Schemes" by Bellare, Hoang and Rogaway
-		 */
-		aes.computeBlock(inBytes, 0, outBytes, 0);
-		/*
-		 * XOR the output of the AES again with inBytes (i.e. K in the above cited paper) and then with the ciphertext to obtain the plaintext.
-		 */
-		for (int byteNumber = 0; byteNumber < outBytes.length; byteNumber++) {
-			outBytes[byteNumber] ^= inBytes[byteNumber];
-			outBytes[byteNumber] ^= ciphertext[byteNumber];
-		}
 		return outBytes;
 	}
 

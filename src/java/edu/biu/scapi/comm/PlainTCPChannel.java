@@ -36,6 +36,7 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.logging.Level;
 
 import edu.biu.scapi.generals.Logging;
@@ -247,7 +248,7 @@ public class PlainTCPChannel extends PlainChannel{
 	 * Return the underlying socket. Used only internally.
 	 * @return the underlying socket
 	 */
-	Socket getSocket(){
+	public Socket getSocket(){
 		return socket;
 	}
 

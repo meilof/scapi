@@ -12,7 +12,7 @@ NTL_LIB = -lntl
 NTL_LIB_DIR = -L$(libdir)
 
 # sources
-SOURCES = EvaluationHashFunction.cpp JniEvaluationHashFunction.cpp SigmaProtocolOR.cpp
+SOURCES = EvaluationHashFunction.cpp JniEvaluationHashFunction.cpp SigmaProtocolOR.cpp KProbeResistantMatrix.cpp
 OBJ_FILES = $(SOURCES:.cpp=.o)
 
 ## targets ##
@@ -29,4 +29,6 @@ libNTLJavaInterface$(JNI_LIB_EXT): $(OBJ_FILES)
 clean:
 	rm -f *~
 	rm -f *.o
-	rm -f *$(JNI_LIB_EXT)
+	rm -f *.so
+	rm -f *.dylib
+	rm -f *.jnilib

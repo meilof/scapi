@@ -40,12 +40,39 @@ import edu.biu.scapi.exceptions.DuplicatePartyException;
  * The constructor of this class create the ActiveMQ connection factory and the ActiveMQDestroyer and pass it to the 
  * constructor of the QueueCommunicationSetup to work with.
  * 
- *  * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Moriya Farbstein)
+ * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Moriya Farbstein)
  *
  */
 public class ActiveMQCommunicationSetup extends QueueCommunicationSetup{
 	
+	/**
+	 * Sets the parties parameters and create the communication using the given url.<p>
+	 * 
+	 * In case you use this constructor, Nagles algorithm is disabled; for cryptographic protocols this is 
+	 * typically much better.
+	 *  
+	 * @param url The url of the ActiveMQ broker.
+	 * @param me Data of the current application.
+	 * @param party Data of the other application.
+	 * @throws DuplicatePartyException
+	 */
 	public ActiveMQCommunicationSetup(String url, PartyData me, PartyData party) throws DuplicatePartyException {
+		//Call the other constructor without enabling Nagle algorithm. This is much better for cryptographic algorithms.
+		this(url, me, party, false);
+		
+	}
+	
+	/**
+	 * Sets the parties parameters and create the communication using the given url.<p>
+	 * Note that using this function you can choose to use or not to use the Nagle algorithm.
+	 * 
+	 * @param url The url of the ActiveMQ broker.
+	 * @param me Data of the current application.
+	 * @param party Data of the other application.
+	 * @param enableNagle Indicates if to use Nagle's algorithm or not. For cryptographic algorithms it is much better to disable Nagle's algorithm. 
+	 * @throws DuplicatePartyException
+	 */
+	public ActiveMQCommunicationSetup(String url, PartyData me, PartyData party, boolean enableNagle) throws DuplicatePartyException {
 		
 		// Create an ActiveMQConnectionFactory with the given URL, and enable/disable nagle's algorithm (by defining 
 		//tcpNoDelay) using the given enableNagle.		
@@ -56,7 +83,7 @@ public class ActiveMQCommunicationSetup extends QueueCommunicationSetup{
 	}
 	
 	/**
-	 * A class that distruct the ActiveMQ destinations using the ActiveMQ connection.
+	 * A class that delete the ActiveMQ destinations using the ActiveMQ connection.
 	 * 
 	 * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Moriya Farbstein)
 	 */

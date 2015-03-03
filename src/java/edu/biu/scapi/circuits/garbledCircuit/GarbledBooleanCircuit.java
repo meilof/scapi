@@ -113,7 +113,7 @@ public interface GarbledBooleanCircuit {
      * value in the 1 position is the 1 encoding.
      * @param allOutputWireValues A {@Map} containing both keys for each output wire. 
      * When calling the function this map should be empty and will be filled during the process of the function.
-     * @return {@code true} if this {@code GarbledBooleanCircuit} is a garbling the given keys, {@code false} if it is not.
+     * @return {@code true} if the garbled table of this circuit is complied with the given input keys, {@code false} otherwise.
      */
 	public boolean internalVerify(Map<Integer, SecretKey[]> allInputWireValues, Map<Integer, SecretKey[]> allOutputWireValues);
 	

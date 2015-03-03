@@ -35,7 +35,7 @@ import edu.biu.scapi.interactiveMidProtocols.commitmentScheme.CmtCDecommitmentMe
  * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Yael Ejgenberg)
  *
  */
- class CmtSimpleHashDecommitmentMessage implements CmtCDecommitmentMessage, Serializable {
+public class CmtSimpleHashDecommitmentMessage implements CmtCDecommitmentMessage, Serializable {
 	private ByteArrayRandomValue r; //Random value sampled during the commitment stage;
 	private byte[] x; //Committer's private input x 
 	private static final long serialVersionUID = 445290722191231848L;
@@ -45,7 +45,7 @@ import edu.biu.scapi.interactiveMidProtocols.commitmentScheme.CmtCDecommitmentMe
 	 * @param x the committed value
 	 * @param r the random value used for commit.
 	 */
-	CmtSimpleHashDecommitmentMessage(ByteArrayRandomValue r, byte[] x) {
+	public CmtSimpleHashDecommitmentMessage(ByteArrayRandomValue r, byte[] x) {
 		super();
 		this.r = r;
 		this.x = x;

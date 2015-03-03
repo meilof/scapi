@@ -21,6 +21,10 @@
   <path id="apache-commons-exec">
     <pathelement location="assets/${scapi.depend.apachecommons.filename}.jar"/>
   </path>
+
+  <path id="active-mq">
+    <pathelement location="assets/${scapi.depend.activemq.filename}.jar"/>
+  </path>
   
   <path id="activemq">
     <pathelement location="assets/${scapi.depend.activemq.filename}.jar"/>

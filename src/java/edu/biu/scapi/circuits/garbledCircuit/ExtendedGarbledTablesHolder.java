@@ -120,5 +120,10 @@ public class ExtendedGarbledTablesHolder implements GarbledTablesHolder{
 		this.inputGarbledTables.setGarbledTables(inputGarbledTables.toDoubleByteArray());
 		this.outputGarbledTables.setGarbledTables(outputGarbledTables.toDoubleByteArray());
 	}
+	
+	public void setInnerGarbledTables(GarbledTablesHolder internalGarbledTables){
+		this.internalGarbledTables = internalGarbledTables;
+		
+	}
 
 }

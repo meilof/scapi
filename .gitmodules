@@ -16,3 +16,6 @@
 [submodule "lib/OTExtension"]
 	path = lib/OTExtension
 	url = git://github.com/cryptobiu/OTExtension.git
+[submodule "lib/MaliciousOTExtension"]
+	path = lib/MaliciousOTExtension
+	url = https://github.com/cryptobiu/MaliciousOTExtension.git

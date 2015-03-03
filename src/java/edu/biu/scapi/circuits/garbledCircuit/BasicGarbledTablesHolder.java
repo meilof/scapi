@@ -33,7 +33,7 @@ package edu.biu.scapi.circuits.garbledCircuit;
  * @author Cryptography and Computer Security Research Group Department of Computer Science Bar-Ilan University (Moriya Farbstein)
  *
  */
-class BasicGarbledTablesHolder implements GarbledTablesHolder{
+public class BasicGarbledTablesHolder implements GarbledTablesHolder{
 
 	private static final long serialVersionUID = -7744399536390133399L;
 	private byte[][] garbledTables;
@@ -42,7 +42,7 @@ class BasicGarbledTablesHolder implements GarbledTablesHolder{
 	 * Sets the given garbled tables.
 	 * @param garbledTables
 	 */
-	BasicGarbledTablesHolder(byte[][] garbledTables){
+	public BasicGarbledTablesHolder(byte[][] garbledTables){
 		this.garbledTables = garbledTables;
 	}
 

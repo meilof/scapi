@@ -74,5 +74,23 @@ public class SocketPartyData implements PartyData{
 		return ret;
 		
 	}
+	
+	@Override
+	public boolean equals(Object c){
+		if (!(c instanceof SocketPartyData)){
+			return false;
+		}
+		SocketPartyData otherParty = (SocketPartyData) c;
+		if (ipAddress.equals(otherParty.getIpAddress()) && (port==otherParty.getPort())){
+			return true;
+		}
+		return true;
+		
+	}
+	@Override
+	public int hashCode() {
+		return ipAddress.hashCode() * port;
+	}
+	
 
 }

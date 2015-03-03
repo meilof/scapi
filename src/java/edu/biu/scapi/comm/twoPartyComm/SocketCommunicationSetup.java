@@ -25,8 +25,8 @@
 
 package edu.biu.scapi.comm.twoPartyComm;
 
-import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import org.apache.commons.exec.TimeoutObserver;
@@ -56,14 +56,14 @@ import edu.biu.scapi.generals.Logging;
  */
 public class SocketCommunicationSetup implements TwoPartyCommunicationSetup, TimeoutObserver{
 
-	protected boolean bTimedOut = false; 								//Indicated whether or not to end the communication.
+	protected boolean bTimedOut = false; 							//Indicated whether or not to end the communication.
 	private Watchdog watchdog;										//Used to measure times.
 	private boolean enableNagle = false;							//Indicated whether or not to use Nagle optimization algorithm.
-	protected EstablishedSocketConnections establishedConnections;	//Holds the created channels.
+	protected TwoPartySocketConnector connector;					//Used to create and connect the channels to the other party.
 	protected SocketListenerThread listeningThread;					//Listen to calls from the other party.
 	private int connectionsNumber;									//Holds the number of created connections. 
-	SocketPartyData me;												//The data of the current application
-	SocketPartyData other;											//The data of the other application to communicate with.
+	protected SocketPartyData me;									//The data of the current application.
+	protected SocketPartyData other;								//The data of the other application to communicate with.
 	
 	/**
 	 * A constructor that set the given parties.
@@ -85,15 +85,18 @@ public class SocketCommunicationSetup implements TwoPartyCommunicationSetup, Tim
 			throw new DuplicatePartyException("Another party with the same ip address and port");
 		}
 		connectionsNumber = 0;
+		
+		//Create the connector object that creates and connect the channels.
+		connector = new TwoPartySocketConnector(me, other);
 	}
 	
 	/**  
 	 * Initiates the creation of the actual sockets connections between the parties. If this function succeeds, the 
 	 * application may use the send and receive functions of the created channels to pass messages.
-	 * 
+	 * @throws TimeoutException in case a timeout has occurred before all channels have been connected.
 	 */
 	@Override
-	public Map<String, Channel> prepareForCommunication(String[] connectionsIds, long timeOut) {		
+	public Map<String, Channel> prepareForCommunication(String[] connectionsIds, long timeOut) throws TimeoutException {		
 		
 		//Start the watch dog with the given timeout.
 		watchdog = new Watchdog(timeOut);
@@ -101,30 +104,38 @@ public class SocketCommunicationSetup implements TwoPartyCommunicationSetup, Tim
 		watchdog.addTimeoutObserver(this);
 		watchdog.start();
 		
-		establishedConnections = new EstablishedSocketConnections();
+		//Establish the connections.
+		establishConnections(connectionsIds);
 		
-		//Establish connections.
-		establishAndSecureConnections(connectionsIds);
+		//Verify that all connections have been connected.
+		connector.verifyConnectingStatus();
 		
-		//Verify connections.
-		verifyConnectingStatus();
-		
-		//Remove all connections with not READY state.
-		establishedConnections.removeNotReadyConnections();
+		//If we already know that all the connections were established we can stop the watchdog.
+		watchdog.stop();
+			
+		//In case of timeout, throw a TimeoutException
+		if (bTimedOut){
+			throw new TimeoutException("timeout has occurred");
+		}
 		
 		//Set Nagle algorithm.
-		establishedConnections.enableNagle(enableNagle);
+		if (enableNagle)
+			connector.enableNagle();
 		
 		//Update the number of the created connections.
-		connectionsNumber += establishedConnections.getConnectionsCount();
+		connectionsNumber += connector.getConnectionsCount();
 		
 		//Return the map of channels held in the established connection object.
-		return establishedConnections.getConnections();
+		Map<String, Channel> connections = connector.getConnections();
+		
+		connector.reset();
+		
+		return connections;
 		
 	}
 	
 	@Override
-	public Map<String, Channel> prepareForCommunication(int connectionsNum, long timeOut) {
+	public Map<String, Channel> prepareForCommunication(int connectionsNum, long timeOut) throws TimeoutException {
 		//Prepare the connections Ids using the default implementation, meaning the connections are numbered 
 		//according to their index. i.e the first connection's name is "1", the second is "2" and so on.
 		String[] names = new String[connectionsNum];
@@ -142,90 +153,34 @@ public class SocketCommunicationSetup implements TwoPartyCommunicationSetup, Tim
 	 * while the other used by P2 to send messages and P1 receives them.
 	 * 
 	 * The function does the following steps:
-	 * 1. Creates a channel for each connection
+	 * 1. Calls the connector.createChannels function that creates a channel for each connection.
 	 * 2. Start a listening thread that accepts calls from the other party.
-	 * 3. Calls each channel's connect function in order to connect each channel to the other party.
+	 * 3. Calls the connector.connect function that calls each channel's connect function in order to connect each channel to the other party.
 	 * @param connectionsIds The names of the requested connections. 
 	 *
 	 */
-	protected void establishAndSecureConnections(String[] connectionsIds) {
+	private void establishConnections(String[] connectionsIds) {
 		
-		//Create an InetSocketAddress of the other party.
-		InetSocketAddress inetSocketAdd = new InetSocketAddress(other.getIpAddress(), other.getPort());
+		//Calls the connector to create the channels.
+		PlainTCPSocketChannel[] channels = connector.createChannels(connectionsIds, false);
 		
-		int size = connectionsIds.length;
-		//Create an array to hold the created channels.
-		PlainTCPSocketChannel[] channels = new PlainTCPSocketChannel[size];
-		
-		//Create the number of channels as requested.
-		for (int i=0; i<size; i++){
-			//Create a channel.
-			channels[i] = new PlainTCPSocketChannel(inetSocketAdd);
-			//Set to NOT_INIT state.
-			channels[i].setState(PlainTCPSocketChannel.State.NOT_INIT);
-			//Add to the established connection object.
-			establishedConnections.addConnection(connectionsIds[i], channels[i]);
+		if (!bTimedOut){
+			//Create a listening thread with the created channels.
+			//The listening thread receives calls from the other party and set the creates sockets as the receiveSocket of the channels.
+			createListener(channels);
+			listeningThread.start();
 		}
 		
-		//Create a listening thread with the created channels.
-		//The listening thread receives calls from the other party and set the creates sockets as the receiveSocket of the channels.
+		//Calls the connector to connect each channel.
+		connector.connect(channels);
+		
+	}
+
+	protected void createListener(PlainTCPSocketChannel[] channels) {
 		listeningThread = new SocketListenerThread(channels, me, other.getIpAddress());
-		listeningThread.start();
-		
-		//Start the connections between me to the other party.
-		connect(channels);
-		
-	}
-	
-	/**
-	 * This function calls each channel to connect to the other party.
-	 * @param channels between me to the other party.
-	 */
-	private void connect(PlainTCPSocketChannel[] channels){
-
-		//For each channel, call the connect function until the channel is actually connected.
-		for (int i=0; i<channels.length; i++){
-			
-			//while connection has not been stopped by owner and connection has failed.
-			while(!channels[i].isSendConnected() && !bTimedOut){
-				
-				//Set the state to connecting.
-				channels[i].setState(PlainTCPSocketChannel.State.CONNECTING);
-				Logging.getLogger().log(Level.INFO, "state: connecting " + channels[i].toString());
-				
-				//Try to connect.
-				channels[i].connect();
-				
-			}
-				
-			Logging.getLogger().log(Level.INFO, "End of securing thread run" + channels[i].toString());
-		}
 	}
 
-	/** 
-	 * This function serves as a barrier. It is called from the prepareForCommunication function. The idea
-	 * is to let all the threads finish running before proceeding. 
-	 */ 
-	private void verifyConnectingStatus() {
-		
-		boolean allConnected = false;
-		
-		//Wait until the thread has been stopped or all the channels are connected.
-		while(!bTimedOut && !(allConnected = establishedConnections.areAllConnected())){
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-
-				Logging.getLogger().log(Level.FINEST, e.toString());
-			}
-		}
-		
-		//If we already know that all the connections were established we can stop the watchdog.
-		if(allConnected){
-			watchdog.stop();
-		}
-	}
-	
+	@Override
 	public void enableNagle(){
 		//Set to true the boolean indicates whether or not to use the Nagle optimization algorithm. 
 		//For Cryptographic algorithms is better to have it disabled.
@@ -241,10 +196,16 @@ public class SocketCommunicationSetup implements TwoPartyCommunicationSetup, Tim
 		
 		//Timeout has passed, set the flag.
 		bTimedOut = true;
-		
+	
 		//Further stop the listening thread if it still runs. Similarly, it sets the flag of the listening thread to stopped.
 		if(listeningThread != null)
 			listeningThread.stopConnecting();
+		
+		if(connector != null){
+			connector.stopConnecting();
+		}
+		
+		
 	}
 
 	/**
