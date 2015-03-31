@@ -244,9 +244,11 @@ $(JAR_BOUNCYCASTLE):
 #	@cp $(builddir)/BouncyCastle/build/artifacts/jdk1.5/jars/bcprov-jdk* assets/
 #	@touch compile-bouncycastle
 
-$(JAR_SCAPI): $(JAR_SCAPI_BUILD) $(JAR_BOUNCYCASTLE) $(JAR_APACHE_COMMONS)
+$(JAR_SCAPI_BUILD): $(JAR_BOUNCYCASTLE) $(JAR_APACHE_COMMONS)
 	@echo "Compiling the SCAPI java code..."
 	@ant
+
+$(JAR_SCAPI): $(JAR_SCAPI_BUILD) 
 	@cp $(JAR_SCAPI_BUILD) assets/
 
 scripts/scapi.sh: scripts/scapi.sh.tmpl
