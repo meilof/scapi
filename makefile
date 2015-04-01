@@ -85,7 +85,7 @@ JNI_TARGETS=jni-cryptopp jni-miracl jni-openssl jni-otextension jni-malotext jni
 BASENAME_BOUNCYCASTLE:=bcprov-jdk15on-150.jar
 BASENAME_APACHE_COMMONS:=commons-exec-1.2.jar
 BASENAME_JUNIT:=junit-3.7.jar
-BASENAME_SCAPI:=Scapi-V2-3-0x.jar
+BASENAME_SCAPI:=TUeScapi-V2-3-0.jar
 
 # target names of created jars (apache commons, bouncy castle, scapi)
 #JAR_BOUNCYCASTLE:=$(builddir)/BouncyCastle/jars/$(BASENAME_BOUNCYCASTLE)
@@ -163,10 +163,10 @@ compile-malotext: compile-openssl compile-miracl-cpp
 # TODO: add GMP and GF2X
 compile-ntl:
 	@echo "Compiling the NTL library..."
-	@cp -r lib/NTL/unix $(builddir)/NTL
-	@cd $(builddir)/NTL/src/ && ./configure CFLAGS=$(NTL_CFLAGS) CC=$(CC) CXX=$(CXX)
-	@$(MAKE) -C $(builddir)/NTL/src/
-	@$(MAKE) -C $(builddir)/NTL/src/ PREFIX=$(prefix) install
+	#@cp -r lib/NTL/unix $(builddir)/NTL
+	#@cd $(builddir)/NTL/src/ && ./configure CFLAGS=$(NTL_CFLAGS) CC=$(CC) CXX=$(CXX)
+	#@$(MAKE) -C $(builddir)/NTL/src/
+	#@$(MAKE) -C $(builddir)/NTL/src/ PREFIX=$(prefix) install
 	@touch compile-ntl
 
 compile-openssl:

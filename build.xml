@@ -4,8 +4,8 @@
   <!--build properties-->
   <property name="scapi.build.directory" value="build/scapi"/>
   <property name="scapi.build.output" value="build/scapi/classes"/>
-  <property name="scapi.build.version" value="2-3-0x"/>
-  <property name="scapi.build.final.name" value="Scapi-V${scapi.build.version}"/>
+  <property name="scapi.build.version" value="2-3-0"/>
+  <property name="scapi.build.final.name" value="TUeScapi-V${scapi.build.version}"/>
 
   <!--external dependencies-->
   <property name="scapi.depend.bouncycastle.filename" value="bcprov-jdk15on-150"/>
