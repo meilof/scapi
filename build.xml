@@ -10,7 +10,7 @@
   <!--external dependencies-->
   <property name="scapi.depend.bouncycastle.filename" value="bcprov-jdk15on-150"/>
   <property name="scapi.depend.apachecommons.filename" value="commons-exec-1.2"/>
-  <property name="scapi.depend.activemq.filename" value="activemq-core"/>
+  <property name="scapi.depend.activemq.filename" value="activemq-all-5.9.1"/>
   <property name="scapi.depend.jms.filename" value="jms"/>
   
   <!--paths-->
