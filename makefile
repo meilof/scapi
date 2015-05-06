@@ -171,11 +171,11 @@ compile-ntl:
 
 compile-openssl:
 	@echo "Compiling the OpenSSL library..."
-	#@cp -r lib/OpenSSL $(builddir)/OpenSSL
-	#@cd $(builddir)/OpenSSL && $(OPENSSL_CONFIGURE) shared -fPIC --openssldir=$(prefix)/ssl
-	#@$(MAKE) -C $(builddir)/OpenSSL depend
-	#@$(MAKE) -C $(builddir)/OpenSSL all
-	#@$(MAKE) -C $(builddir)/OpenSSL install
+	@cp -r lib/OpenSSL $(builddir)/OpenSSL
+	@cd $(builddir)/OpenSSL && $(OPENSSL_CONFIGURE) shared -fPIC --openssldir=$(prefix)/ssl
+	@$(MAKE) -C $(builddir)/OpenSSL depend
+	@$(MAKE) -C $(builddir)/OpenSSL all
+	@$(MAKE) -C $(builddir)/OpenSSL install
 	@touch compile-openssl
 
 compile-opengarble:
