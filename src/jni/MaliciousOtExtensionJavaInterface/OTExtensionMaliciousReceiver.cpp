@@ -20,7 +20,6 @@ JNIEnv *env, jobject, jstring ipAddress, jint port, jint numOfthreads, jint nbas
 
     // get the ip address from java
     const char* address = env->GetStringUTFChars(ipAddress, NULL);
-    cerr << "initOtReceiver(" << address << "," << port << ")" << endl;
 
     OtExtensionMaliciousReceiverInterface * receiver_interface;
     receiver_interface = new OtExtensionMaliciousReceiverInterface(address,
@@ -30,7 +29,7 @@ JNIEnv *env, jobject, jstring ipAddress, jint port, jint numOfthreads, jint nbas
 								   (int) numOTs);
     receiver_interface->init_ot_receiver();
 
-    cerr << "finished initOtReceiver." << endl;
+
     return (jlong) receiver_interface;
 }
 
@@ -52,7 +51,7 @@ jint bitLength, jbyteArray output, jstring version) {
 	return;
     }
 
-    cerr << "Started runOtAsReceiver." << endl;
+
 
     // The masking function with which the values that are sent 
     // in the last communication step are processed
@@ -92,9 +91,11 @@ jint bitLength, jbyteArray output, jstring version) {
     //run the ot extension as the receiver
     OtExtensionMaliciousReceiverInterface * receiver_interface = (OtExtensionMaliciousReceiverInterface *) receiver;
 
+
     cerr << "started receiver_interface->obliviously_receive()" << endl;
     receiver_interface->obliviously_receive(choices, response, numOfOts, bitLength, ver, masking_function);
     cerr << "ended receiver_interface->obliviously_receive()" << endl;
+
 
     //prepare the out array
     jbyte *out = env->GetByteArrayElements(output, 0);
@@ -116,7 +117,7 @@ jint bitLength, jbyteArray output, jstring version) {
 	delete masking_function;
     }
 
-    cerr << "ended runOtAsReceiver." << endl;
+
 }
 
 /*
