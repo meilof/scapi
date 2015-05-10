@@ -142,14 +142,12 @@ Establishing Secure Communication
 
 The first thing that needs to be done to obtain communication services is to setup the connections between the different parties. Each party needs to run the setup process at the end of which the established connections are obtained. The established connections are called *channels*.
 
-The ``CommunicationSetup`` Class is responsible for establishing secure communication to other parties. An application requesting from ``CommunicationSetup`` to prepare for communication needs to call the ``CommunicationSetup::prepareForCommunication()`` function:
+The ``CommunicationSetup`` Classes are responsible for establishing secure communication to other parties. An application requesting from ``CommunicationSetup`` to prepare for communication needs to call the ``CommunicationSetup::prepareForCommunication()`` function:
 
-.. java:method:: Map<InetSocketAddress, Channel> prepareForCommunication(List<Party> listOfParties, ConnectivitySuccessVerifier successLevel, long timeOut, boolean enableNagle)
+.. java:method:: Map<String, Channel> prepareForCommunication(List<PartyData> listOfParties, long timeOut)
 
-    :param List<Party> listOfParties: The list of parties to connect to. As a convention, we will set the first party in the list to be the requesting party, that is, the party represented by the application.
-    :param ConnectivitySuccessVerifier successLevel: The type of connecting success required.
+    :param List<PartyData> listOfParties: The list of parties to connect to. As a convention, we will set the first party in the list to be the requesting party, that is, the party represented by the application.
     :param long timeOut: A time-out (in milliseconds) specifying how long to wait for connections to be established and secured.
-    :param boolean enableNagle: Whether or not `Nagle’s algorithm <http://en.wikipedia.org/wiki/Nagle's_algorithm>` can be enabled.
     :return: a map of the established channels.
 
 Let's add the following method to the ``DlogExample`` class:
@@ -161,34 +159,31 @@ Let's add the following method to the ``DlogExample`` class:
     import java.util.List;
     import java.util.Map;
 
-    import edu.biu.scapi.comm.Party;
-    import edu.biu.scapi.comm.LoadParties;
+    import java.util.concurrent.TimeoutException;
 
     import edu.biu.scapi.comm.Channel;
-    import edu.biu.scapi.comm.CommunicationSetup;
+	import edu.biu.scapi.comm.twoPartyComm.LoadSocketParties;
+	import edu.biu.scapi.comm.twoPartyComm.NativeSocketCommunicationSetup;
+	import edu.biu.scapi.comm.twoPartyComm.PartyData;
+	import edu.biu.scapi.exceptions.DuplicatePartyException;
 
-    import edu.biu.scapi.comm.ConnectivitySuccessVerifier;
-    import edu.biu.scapi.comm.NaiveSuccess;
+    private static Channel setCommunication() throws TimeoutException, DuplicatePartyException {
+	     //Prepare the parties list.
+	     LoadSocketParties loadParties = new LoadSocketParties("Parties0.properties");
+	     List<PartyData> listOfParties = loadParties.getPartiesList();
+	        
+	     //Create the communication setup.
+	     NativeSocketCommunicationSetup commSetup = new NativeSocketCommunicationSetup(listOfParties.get(0), listOfParties.get(1));
+	        
+	     long timeoutInMs = 60000;	//The maximum amount of time we are willing to wait to set a connection.
+	     int numberOfChannels = 1;	//The number of required channels.
 
-    private static Channel setCommunication() {
-        //Prepare the parties list.
-        LoadParties loadParties = new LoadParties("Parties0.properties");
-        List<Party> listOfParties = loadParties.getPartiesList();
-        
-        //Create the communication setup.
-        CommunicationSetup commSetup = new CommunicationSetup();
-        
-        //Choose the naive connectivity success algorithm.
-        ConnectivitySuccessVerifier naive = new NaiveSuccess();
-        
-        long timeoutInMs = 60000; //The maximum amount of time we are willing to wait to set a connection.
-        
-        Map<InetSocketAddress, Channel> map = commSetup.prepareForCommunication(listOfParties, naive, timeoutInMs);
-        
-        // prepareForCommunication() returns a map with all the established channels,
-        // we return only the first one since this code assumes the two-party case.
-        return map.values().iterator().next();
-    }
+	     Map<String, Channel> connections = commSetup.prepareForCommunication(numberOfChannels, timeoutInMs);
+	        
+	     // prepareForCommunication() returns a map with all the established channels,
+	     // we return only the first one since this code assumes the two-party case.
+	     return connections.values().iterator().next();
+	}
 
 In this example, the list of parties is read from a properties file called *Parties0.properties*: ::
 
